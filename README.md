@@ -11,6 +11,6 @@ This project processes disaster-related messages to identify categories that ass
 2. Run the following command in the app's directory to run your web app.
     `python run.py`
 
-3. Go to http://0.0.0.0:3001/
+3. Go to http://0.0.0.0:3001/ or http://127.0.0.1:3001
 
 
