@@ -3,6 +3,22 @@ import pandas as pd
 from sqlalchemy import create_engine
 
 def load_data(messages_filepath, categories_filepath):
+    """
+    Loads and returns messages and categories data from specified file paths.
+
+    Parameters:
+    messages_filepath (str): File path for the messages CSV file.
+    categories_filepath (str): File path for the categories CSV file.
+
+    Returns:
+    tuple: A tuple containing:
+        - messages (DataFrame): DataFrame with loaded messages data.
+        - categories (DataFrame): DataFrame with loaded categories data.
+
+    Additional Information:
+    Prints debug information including the shape and head of each DataFrame.
+    """
+
     print(f"Loading messages from {messages_filepath} and categories from {categories_filepath}")
     messages = pd.read_csv(messages_filepath)
     print("Messages DataFrame loaded. Shape:", messages.shape)
@@ -15,6 +31,26 @@ def load_data(messages_filepath, categories_filepath):
     return messages, categories
 
 def clean_data(messages, categories):
+    """
+    Cleans and prepares merged messages and categories data for analysis.
+
+    Steps:
+    1. Merges messages and categories DataFrames on the 'id' column.
+    2. Splits categories into separate columns with binary (0 or 1) values.
+    3. Drops unnecessary columns, merges categories with the main DataFrame, and removes duplicates.
+    4. Fills NaN values in the final DataFrame with 0.
+
+    Parameters:
+    messages (DataFrame): DataFrame containing disaster messages.
+    categories (DataFrame): DataFrame containing disaster message categories.
+
+    Returns:
+    DataFrame: A cleaned and preprocessed DataFrame with messages and category columns.
+
+    Additional Information:
+    Prints intermediate DataFrames and shapes for debugging purposes.
+    """
+     
     print("Merging messages and categories DataFrames...")
     df = pd.merge(messages, categories, on='id', how='left')
     print("Merged DataFrame shape:", df.shape)
@@ -57,6 +93,20 @@ def clean_data(messages, categories):
     return df_new
 
 def save_data(df_cleaned, database_filepath):
+    """
+    Saves the cleaned DataFrame to a SQLite database.
+
+    Parameters:
+    df_cleaned (DataFrame): The cleaned DataFrame containing messages and categories.
+    database_filepath (str): Filepath for the SQLite database where the DataFrame will be saved.
+
+    Process:
+    - Establishes a database connection.
+    - Saves the DataFrame to a table named 'messages_classified', replacing it if it already exists.
+
+    Additional Information:
+    Prints status messages to confirm data save location and completion.
+    """
     print(f"Saving cleaned data to database at {database_filepath}")
     engine = create_engine(f'sqlite:///{database_filepath}')
     df_cleaned.to_sql('messages_classified', engine, index=False, if_exists='replace')

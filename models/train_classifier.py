@@ -27,6 +27,26 @@ from sklearn.ensemble import GradientBoostingClassifier
 
 
 def load_data(database_filepath):
+    """
+    Loads data from a SQLite database, preparing features and target variables for model training.
+
+    Parameters:
+    database_filepath (str): Filepath for the SQLite database containing the cleaned message and category data.
+
+    Returns:
+    X (Series): Series of messages to be used as input features.
+    Y (DataFrame): DataFrame of target variables (categories) associated with each message.
+    category_names (list): List of category names used as labels for the classification.
+
+    Process:
+    - Connects to the SQLite database.
+    - Loads the 'messages_classified' table and extracts the 'message' column as input data (X).
+    - Drops unnecessary columns and converts the remaining category columns to numeric format, storing them as target variables (Y).
+    - Handles missing values by filling NaNs with 0 and converting categories to integers.
+
+    Additional Information:
+    Provides debug information on data shapes and category names.
+    """
     engine = create_engine(f'sqlite:///{database_filepath}')
     df = pd.read_sql_table('messages_classified', con=engine)
     X = df['message']
@@ -41,6 +61,25 @@ def load_data(database_filepath):
 
 
 def tokenize(text):
+    """
+    Processes text data by cleaning, tokenizing, removing stop words, and lemmatizing.
+
+    Parameters:
+    text (str): The input text message to be tokenized and cleaned.
+
+    Returns:
+    clean_tokens (list): List of processed words from the input text, ready for model processing.
+
+    Process:
+    - Removes special characters and converts text to lowercase.
+    - Tokenizes the text into individual words.
+    - Removes common stop words to retain meaningful words.
+    - Lemmatizes each word to its root form for uniformity.
+
+    Additional Information:
+    This function is designed for text preprocessing in NLP tasks, making text data cleaner 
+    and more informative for classification or other analysis.
+    """
     # 1. Remove special characters and convert text to lowercase
     text = re.sub(r"[^a-zA-Z0-9\s]", "", text.lower())
 
@@ -59,18 +98,33 @@ def tokenize(text):
 
 
 def build_model():
+    """
+    Builds and returns a machine learning pipeline with a grid search for parameter tuning.
+
+    Returns:
+    model (GridSearchCV): A GridSearchCV object containing the ML pipeline, ready for training 
+    with optimized hyperparameters.
+
+    Pipeline Structure:
+    - Step 1: Text vectorization using CountVectorizer with tokenization.
+    - Step 2: TF-IDF transformation for weighting.
+    - Step 3: Multi-output classification using a Random Forest Classifier.
+
+    Parameters Used in Grid Search:
+    - 'vect__ngram_range': [(1, 1)] restricts vectorization to unigrams.
+    - 'clf__estimator__n_estimators': [10, 20] sets a limited number of trees for Random Forest.
+    - 'clf__estimator__min_samples_split': [2, 3] specifies lower split thresholds for leaf nodes.
+    - 'clf__estimator__max_depth': [5] restricts tree depth for faster training.
+
+    Additional Information:
+    This function constructs a model pipeline suitable for multi-label classification 
+    and optimizes it through a limited grid search to balance accuracy with computational efficiency.
+    """
     model = Pipeline([
     ('vect', CountVectorizer(tokenizer=tokenize)),  # Step 1: Convert text to a matrix of token counts
     ('tfidf', TfidfTransformer()),  # Step 2: Apply tf-idf transformation
     ('clf', MultiOutputClassifier(RandomForestClassifier()))  # Step 3: Multi-output classification using RandomForest
     ])
-
-    #parameters = {
-    #'clf__estimator__n_estimators': [10, 20, 50],  # Number of trees in the Random Forest
-    #'clf__estimator__min_samples_split': [2, 3],  # Minimum number of samples required to split a node
-    #'clf__estimator__max_depth': [5, 10, 20]  # Maximum depth of the tree
-    #}
-
     #new test parameters
     parameters = {
     'vect__ngram_range': [(1, 1)],  # Begrenzen auf Unigramme
@@ -85,6 +139,23 @@ def build_model():
     return model
 
 def evaluate_model(model, X_test, Y_test, category_names):
+    """
+    Evaluates the trained model on test data and prints classification reports for each category.
+
+    Args:
+    model: The trained machine learning model.
+    X_test (pd.Series or np.array): Test data, typically a series of message texts.
+    Y_test (pd.DataFrame): Test labels for each category as columns.
+    category_names (list): List of category names corresponding to the columns in Y_test.
+
+    Process:
+    - Generates predictions on the test data (X_test) using the provided model.
+    - For each category, calculates and prints a classification report comparing actual vs. predicted labels.
+    - Outputs precision, recall, and F1-score metrics for each category to assess model performance.
+
+    Returns:
+    None
+    """
     Y_pred = model.predict(X_test)
 
     for i, category in enumerate(category_names):
@@ -94,6 +165,20 @@ def evaluate_model(model, X_test, Y_test, category_names):
 
 #model_filepath = saved Filename like 'model_123'
 def save_model(model, model_filepath):
+    """
+    Saves the trained machine learning model as a pickle file.
+
+    Args:
+    model: The trained machine learning model to be saved.
+    model_filepath (str): The file path where the model will be saved.
+
+    Process:
+    - Opens the specified file in write-binary mode.
+    - Uses pickle to serialize and save the model, making it available for later use.
+    
+    Returns:
+    None
+    """
     with open(model_filepath, 'wb') as file:
         pickle.dump(model, file)
 
