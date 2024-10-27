@@ -36,7 +36,7 @@ def clean_data(messages, categories):
 
     Steps:
     1. Merges messages and categories DataFrames on the 'id' column.
-    2. Splits categories into separate columns with binary (0 or 1) values.
+    2. Splits categories into separate columns with binary (0 or 1) values, and removes rows where 'related' is 2.
     3. Drops unnecessary columns, merges categories with the main DataFrame, and removes duplicates.
     4. Fills NaN values in the final DataFrame with 0.
 
@@ -63,11 +63,15 @@ def clean_data(messages, categories):
     categories.columns = category_colnames
     print("Category column names:", list(categories.columns))
 
-    # Convert category values to 0 or 1
+    # Convert category values to integers
     for column in categories:
         categories[column] = categories[column].str[-1]
         categories[column] = categories[column].astype(int)
     print("Categories DataFrame after splitting and converting to numeric:\n", categories.head())
+
+    # Remove rows where 'related' column has a value of 2
+    categories = categories[categories['related'] != 2]
+    print(f"DataFrame after removing rows where 'related' is 2. New shape: {categories.shape}")
 
     # Drop unnecessary columns from df
     df_new = df.drop(['categories', 'original'], axis=1)
@@ -76,10 +80,6 @@ def clean_data(messages, categories):
     # Concatenate the original DataFrame with the new categories DataFrame
     df_new = pd.concat([df_new, categories], axis=1)
     print("DataFrame after concatenating with categories:\n", df_new.head())
-
-    # Drop 'related' column
-    #df_new = df_new.drop('related', axis=1)
-    #print("DataFrame after dropping 'related' column:\n", df_new.head())
 
     # Drop duplicates
     print("Number of duplicates before dropping:", df_new.duplicated().sum())
@@ -91,6 +91,7 @@ def clean_data(messages, categories):
     print("DataFrame after filling NaN values:\n", df_new.head())
 
     return df_new
+
 
 def save_data(df_cleaned, database_filepath):
     """
